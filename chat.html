@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Construction AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="chat-wrapper">
+    <div class="chat-header">
+      👷🏼‍♀ BuildBot
+      <button onclick="toggleTheme()" class="theme-btn">💫</button>
+    </div>
+
+    <div class="chat-box" id="chat-box"></div>
+
+    <form id="chat-form" class="chat-input">
+      <input type="text" id="message" placeholder="Type your message..." autocomplete="off" />
+      <button type="submit">➤</button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById("chat-form");
+    const input = document.getElementById("message");
+    const chatBox = document.getElementById("chat-box");
+
+    function appendMessage(sender, text) {
+      const div = document.createElement("div");
+      div.className = `msg ${sender}`;
+      div.innerHTML = `
+        <img src="${sender === "user" 
+          ? "https://i.imgur.com/5c5e4OZ.png" :"https://i.imgur.com/AIbot.png"}" class="avatar">
+        <div class="bubble">${text}</div>
+      `;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function showTyping() {
+      const typing = document.createElement("div");
+      typing.id = "typing";
+      typing.className = "msg bot";
+      typing.innerHTML = `
+        <div class="bubble">⏳ Fetching answer...</div>
+      `;
+      chatBox.appendChild(typing);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function removeTyping() {
+      const typing = document.getElementById("typing");
+      if (typing) typing.remove();
+    }
+
+    function addTimestamp() {
+      const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      const div = document.createElement("div");
+      div.className = "timestamp";
+      div.textContent = time;
+      chatBox.appendChild(div);
+    }
+
+    function showSuggestions() {
+      const suggestions = ["What is cement?", "How is concrete made?", "What is M20 grade?"];
+      const div = document.createElement("div");
+      div.className = "suggestions";
+      suggestions.forEach(q => {
+        const btn = document.createElement("button");
+        btn.textContent = q;
+        btn.onclick = () => {
+          appendMessage("user", q);
+          input.value = q;
+          form.dispatchEvent(new Event("submit"));
+          div.remove();
+        };
+        div.appendChild(btn);
+      });
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      appendMessage("user", msg);
+      input.value = "";
+
+      addTimestamp();
+      showTyping();
+
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: msg })
+        });
+        const data = await res.json();
+        removeTyping();
+        appendMessage("bot", data.reply);
+        addTimestamp();
+        showSuggestions();
+      } catch (err) {
+        removeTyping();
+        appendMessage("bot", "⚠️ Error: " + err.message);
+      }
+    });
+
+    function toggleTheme() {
+      document.body.classList.toggle("light-mode");
+    }
+  </script>
+</body>
+</html>
