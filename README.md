@@ -49,6 +49,3 @@ Start the Flask server:
 
      python app.py
      
-Open the web app in your browser via the hosted link:
-
-     https://carpet-outputs-working-sim.trycloudflare.com/
